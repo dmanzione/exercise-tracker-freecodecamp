@@ -5,81 +5,68 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
 const {SchemaType} = require("mongoose");
-const {ObjectId} = require("mongodb");
+const {ObjectId, MongoClient, ObjectID} = require("mongodb");
+const $parent = require("mongodb/lib/operations/add_user");
+
 require('dotenv').config()
 app.use(cors())
 app.use(express.static('public'))
 app.use(bodyParser.urlencoded({ extended: true }));
 
- mongoose.connect('mongodb+srv://dmanzione:12345-@freecodecamp.plgn94j.mongodb.net/?retryWrites=true&w=majority',{ useNewUrlParser: true, useUnifiedTopology: true });
+let db = mongoose.connect('mongodb+srv://dmanzione:12345-@freecodecamp.plgn94j.mongodb.net/?retryWrites=true&w=majority',{ useNewUrlParser: true, useUnifiedTopology: true });
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
-let userSchema =  new mongoose.Schema({
 
-    username: String
-});
 
-    let workoutSchema = new mongoose.Schema(
+
+let userSchema = new mongoose.Schema(
+
         {
 
 
-            description: {
+            username: {
                 type: String,
-                required: true
+            },
+            log:[]
 
-            },
-            duration: {
-                type: Number,
-                required: true
-            },
-            date: Date
+
         }
+
 
 
 
 );
 
-    let logsSchema = new mongoose.Schema({
-            username:String,
-            count:Number,
-            log: Array
-    }
 
-    );
-
-
-
-
-
-
-
-
-
-let User= mongoose.model('User',userSchema);
-let LogBook = mongoose.model('LogBook', logsSchema);
-let Workout = mongoose.model('Workout',workoutSchema);
-
+let User = mongoose.model('User',userSchema);
 
 
 app.get('/', (req, res) => {
-    // User.remove();
-    // LogBook.remove();
-    // Workout.remove();
+
   res.sendFile(__dirname + '/views/index.html')
 });
 
+app.get('/clean', (req, res) => {
 
-app.get('/api/users',function(req, res){
-    let list = [];
+    User.remove(function(err, data){
 
-    User.find({},function(err, data){
-        if(err) return console.log(err)
-        else {
-res.send(data)
-        }
     });
+
+
+});
+app.get('/api/users',function(req, res){
+
+
+    User.find({},function(err, usrs) {
+        if (err) return console.log(err)
+        if(!usrs){
+            res.json({info:'empty'})
+        }
+        res.json(usrs);
+    });
+
 
 
 
@@ -87,106 +74,96 @@ res.send(data)
 });
 
 app.post('/api/users',function(req, res){
-    let sharedId = new ObjectId();
-    let newUser = new User({
 
-        _id:sharedId,
-        username:req.body.username
 
+      let user =  new User({
+
+          username:req.body.username
+
+      }).save((err,u)=>{
+          res.json({_id: u._id, username:u.username})
     });
-    let newLog = new LogBook({
-
-        _id:sharedId,
-        username:req.body.username,
-        count:0,
-        log:new Array()
-    })
-    newLog.save(function(err, data) {
-            if (err) return console.log(err)
-
-        }
-    );
-    newUser.save(function(err, data) {
-        if (err) return console.log(err)
-        else
-            res.json(newUser);
-    })
-
-
-
-
 
 });
 
-app.get('/api/users/:_id/exercises',function(req, res) {
+
+app.post('/api/users/:_id/exercises',function(req, res) {
 
 
-   LogBook.findById({ _id:req.params._id },function(err, data){
+        User.findById({_id: req.params._id}, function (err,u) {
+            if (err) return console.log(err)
+            if(!u){
+                res.json({error:'no such user in record'})
+            }
+            if (err) res.json({error: 'no such record'});
 
-            if(err) return console.log(err);
-            if(!data){
-                res.json("no such record")
+
+            u.log.push({ date: new Date(req.body.date).toDateString(),
+                description: req.body.description,
+                duration:parseInt(req.body.duration)});
+
+            u.save(function (err, updatedLog) {
+
+        if (err) return console.log(err)
+
+                res.json({_id:u._id, username:u.username,date: new Date(req.body.date).toDateString(),  description: req.body.description, duration:parseInt(req.body.duration)});
+    });
+
+
+
+        });
+
+    } );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.get('/api/users/:_id/logs',function(req, res) {
+
+    User.findById({_id:req.params._id},function(err,  usr) {
+        if(err) return console.log(err)
+        if(!usr){
+            res.json({error:'no such user in record'})
+        }
+        let arr = [];
+        if (req.query.properties) {
+
+            for (let i = 0; i < usr.log.length; i++) {
+                if ( new Date(usr.log[i].date).valueOf() < new Date(req.query.from).valueOf()
+                ) {
+                    continue;
+                }
+                if ( new Date(usr.log[i].date).valueOf() > new Date(req.query.to).valueOf()) {
+                    continue;
+                }
+                if ( count >= parseInt(req.query.limit)) {
+
+
+                    continue;
+                }
+
+                arr.push({_id:usr._id,username:usr.username,count:arr.length,log:arr})
+                count++;
             }
 
-
-            res.send(data)
-
-        });
-
-
-
-});
-app.post('/api/users/:_id/exercises',function(req, res) {
-    let exercises;
-
-    LogBook.findById({_id:req.params._id},function(err, data){
-        if(err) return console.log(data)
-
-        let d;
-        if(!req.body.date){
-            d = new Date();
-        }else{
-            d = req.body.date;
+        } else {
+            res.json({_id:usr._id,username:usr.username,count:usr.log.length,log:usr.log});
         }
 
-        let ex = {
-            duration:req.body.duration,
-            description:req.body.description,
-            date:d
 
-        };
-
-        data.log.push(ex);
-        data.count++;
-        data.save(function(err, n){
-            if(err) return console.log(data)
-
-
-        })
-
-        ex._id = data._id;
-        ex.username = data.username;
-        res.json(ex);
-
-    })
-
-
-
-
-
+    });
 
 });
-
-
-app.get('/api/users/:_id/logs',function(req, res){
-
-
-    let logbook = LogBook.findById({_id:req.params._id},function(err,  log){
-        if(err) return console.log(err)
-
-            res.json(log)
-        });
-    })
 
 
 
@@ -209,4 +186,4 @@ app.get('/api/users/:_id/logs',function(req, res){
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
-})
+});

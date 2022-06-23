@@ -1,2 +1,17 @@
 .env
 node_modules
+/.classpath
+/.gitignore
+/.idea/
+/.project
+/.replit
+/README.md
+/index.js
+/CodingChallenge.class
+/PaintersDilemma.class
+/out/
+/package-lock.json
+/package.json
+/public/
+/sample.env
+/views/

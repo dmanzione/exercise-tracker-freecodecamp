@@ -1,0 +1,45 @@
+// MongoDB Playground
+// To disable this template go to Settings | MongoDB | Use Default Template For Playground.
+// Make sure you are connected to enable completions and to be able to run a playground.
+// Use Ctrl+Space inside a snippet or a string literal to trigger completions.
+
+// Select the database to use.
+use('mongodbVSCodePlaygroundDB');
+
+
+db.createCollection({'User'},{
+  username:String
+})
+
+db.Workout.insertOne({
+    username:"dmanzione"
+})
+db.User.find({'username':'dmanzione'}).print()
+db.createCollection({'LogBook'},{
+  /**
+   * Provide the field name for the count.
+   */
+  %/**
+   * field: The field name
+   * expression: The expression.
+   */
+  count:Number,
+  log:Array
+})
+
+
+db.createCollection({'Workout'},{
+    date:Date,
+    description:String,
+    duration:Number
+});
+
+
+console.log(db.Workout)
+
+db.$merge()
+
+let createUser = function(usrname){
+   
+}
+

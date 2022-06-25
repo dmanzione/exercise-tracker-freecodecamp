@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 
 const {SchemaType} = require("mongoose");
 const {ObjectId, MongoClient} = require("mongodb");
-
+const moment = require('moment')
 require('dotenv').config()
 app.use(cors())
 app.use(express.static('public'))
@@ -58,7 +58,8 @@ let userSchema =  new mongoose.Schema({
     let logsSchema = new mongoose.Schema({
             username:String,
             count:Number,
-            log: []
+            log: [],
+            count:Number
     }
 
     );
@@ -187,17 +188,17 @@ app.post('/api/users/:_id/exercises',function(req, res) {
 
             let d;
             if (!req.body.date) {
-                d = new Date();
-                d = d.toDateString();
+                d =  moment().format('ddd MMM DD YYYY')
             } else {
-                d = req.body.date;
-                d = new Date(d).toDateString();
+             
+                d =  moment(req.body.date).format('ddd MMM DD YYYY')
             }
             let ex = new Workout({
                 username: data.username,
                 date: d,
                 description: req.body.description,
-                duration: parseInt(req.body.duration)
+                duration: parseInt(req.body.duration),
+                _id:req.params._id
 
             });
 
@@ -210,18 +211,11 @@ app.post('/api/users/:_id/exercises',function(req, res) {
             });
 
 
+            
+            
 
-                data.duration= parseInt(req.body.duration);
-                data.description= req.body.description;
-                data.date=d;
-
-                data.save(function(e, d2){
-                    if(e)return console.log(e)
-
-                    res.send(d2);
-
-                })
-
+          
+                res.json(ex)
 
             })
 
